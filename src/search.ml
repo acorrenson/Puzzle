@@ -1,7 +1,20 @@
 open Spec
 
-(** Generic solver *)
-module Solver (X : SPEC) = struct
+(** Type of solvers *)
+module type SOLVER = functor (X : SPEC) -> sig
+  val solve : unit -> X.action list option
+end
+
+(**
+  A Simple solver based on Dijsktra algorithm.
+  If the problem specified by [X] has a solution,
+  [Solver(X).solve ()] returns an optimal sequence
+  of actions leading to a goal state.
+
+  If the cost of all actions is the same, it is recommended
+  to use [BfsSolver] instead.
+*)
+module Solver : SOLVER = functor (X: SPEC) -> struct
   module States = Set.Make(struct
     type t = X.state
     let compare = compare
@@ -57,4 +70,18 @@ module Solver (X : SPEC) = struct
     let reach = List.of_seq (Hashtbl.to_seq_values preds) in
     let goal = List.find_opt (fun (x, _) -> X.goal x) reach in
     Option.map build_path goal
+end
+
+(**
+  A solver Breadth First Search resolution algorithm.
+  If the problem specified by [X] has a solution,
+  [BfsSolver(X).solve ()] returns the shortest sequence
+  of actions leading to a goal state.
+
+  Note that this solver is usually much faster
+  than [Solver] on problems where the cost of actions
+  is constant.
+*)
+module BfsSolver : SOLVER = functor (X : SPEC) -> struct
+  let solve () = failwith "not implemented yet"
 end

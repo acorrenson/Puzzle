@@ -35,3 +35,7 @@ let () =
 ]}
 
 To learn more about the specification language of Puzzle, see {!Puzzle.Spec}.
+
+{2 Available solvers}
+
+To see the list of available solers, see {!Puzzle.Search}.
