@@ -1,0 +1,37 @@
+{1 Puzzle - an OCaml library and DSL for problem solving }
+
+Puzzle is beginner-friendly library to
+model puzzles in a declarative way using OCaml
+as a description language.
+
+Models can then be solved using one of the provided
+solvers.
+
+{2 How to use Puzzle}
+
+To use Puzzle, the first step is to open the Puzzle library.
+We also need to import the specification language.
+
+{[
+  open Puzzle
+  open Spec
+]}
+
+Once Puzzle is loaded, a problem can be specified:
+
+{[
+module MySpec : SPEC = struct
+  ...
+end
+]}
+
+And then a solver can be called:
+
+{[
+module MyProblem = Search.Solver(MySpec)
+
+let () =
+  MyProblem.solve ()
+]}
+
+To learn more about the specification language of Puzzle, see {!Puzzle.Spec}.
