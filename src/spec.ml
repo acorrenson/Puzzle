@@ -2,8 +2,7 @@
   {1 DSL(s) for generic problem specification}
 *)
 
-(** {2 Specification of unit costs search problems}
-    {!UNIT_SPEC} is a language to describe search problems
+(** {!UNIT_SPEC} is a language to describe search problems
     where no notion of "cost" is involved.
 
     Such problems are described by a state-space graph
