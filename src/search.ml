@@ -1,11 +1,5 @@
 open Spec
 
-(** Type of solvers *)
-module type SOLVER = functor (X : SPEC) -> sig
-  val solve : unit -> X.action list option
-end
-
-
 (** A module to ease the incremental construction
     of paths in a state space graph.
     The state space is supposed to be characterised by
@@ -94,7 +88,62 @@ end = struct
 end
 
 (**
-  A Simple solver based on Dijsktra algorithm.
+  A solver based on A* algorithm.
+  If the problem specified by [X] has a solution,
+  [HSolver(X).solve ()] returns an optimal sequence
+  of actions leading to a goal state.
+  The search takes advantage of the function [heuristic]
+  provided in the problem specification.
+
+  If no heuristic can be provided, {!Solver} can
+  be used instead.
+*)
+module HSolver(X: HSPEC) : sig
+  val solve : unit -> X.action list option
+end = struct
+  module Marks = Set.Make(struct
+  type t = X.state
+  let compare = compare
+  end)
+
+  exception Found of X.state
+
+  let transitions x =
+  List.map (fun act -> act, X.apply x act) (X.actions x)
+
+  let solve () =
+  (* Cost of going to a state *)
+  let costs = Costs.init X.init in
+  (* Table of predecessors *)
+  let preds = Paths.init X.init in
+  (* Marked states *)
+  let marks = ref Marks.empty in
+  (* Work list *)
+  let queue = Heap.of_array [| 0, X.init |] in
+  let marked x = Marks.mem x !marks in
+  let mark x = marks := Marks.add x !marks in
+  try
+    while not (Heap.is_empty queue) do begin
+      let (xcost, x) = Heap.extract queue in
+      if X.goal x then begin
+        raise (Found x)
+      end else if not (marked x) then begin
+        List.iter (fun (act, y) ->
+          let new_ycost = xcost + X.cost act in
+          if Costs.improve costs y new_ycost then begin
+            Heap.insert queue y (X.heuristic y + new_ycost);
+            Paths.set preds x act y
+          end
+        ) (transitions x);
+        mark x
+      end
+    end done; None
+  with Found x -> Some (Paths.build preds x)
+end
+
+
+(**
+  A Simple solver based on Dijkstra algorithm.
   If the problem specified by [X] has a solution,
   [Solver(X).solve ()] returns an optimal sequence
   of actions leading to a goal state.
@@ -102,59 +151,31 @@ end
   If the cost of all actions is the same, it is recommended
   to use [BfsSolver] instead.
 *)
-module Solver : SOLVER = functor (X: SPEC) -> struct
-  module Marks = Set.Make(struct
-    type t = X.state
-    let compare = compare
-  end)
-
-  exception Found of X.state
-
-  let transitions x =
-    List.map (fun act -> act, X.apply x act) (X.actions x)
-
-  let solve () =
-    (* Cost of going to a state *)
-    let costs = Costs.init X.init in
-    (* Table of predecessors *)
-    let preds = Paths.init X.init in
-    (* Marked states *)
-    let marks = ref Marks.empty in
-    (* Work list *)
-    let queue = Heap.of_array [| 0, X.init |] in
-    let marked x = Marks.mem x !marks in
-    let mark x = marks := Marks.add x !marks in
-    try
-      while not (Heap.is_empty queue) do begin
-        let (xcost, x) = Heap.extract queue in
-        if X.goal x then begin
-          raise (Found x)
-        end else if not (marked x) then begin
-          List.iter (fun (act, y) ->
-            let new_ycost = xcost + X.cost act in
-            if Costs.improve costs y new_ycost then begin
-              Heap.insert queue y new_ycost;
-              Paths.set preds x act y
-            end
-          ) (transitions x);
-          mark x
-        end
-      end done; None
-    with Found x -> Some (Paths.build preds x)
+module Solver(X: SPEC) : sig
+  val solve : unit -> X.action list option
+end = struct
+  module Hspec : HSPEC with type action = X.action = struct
+    include X
+    let heuristic _ = 0
+  end
+  include HSolver(Hspec)
 end
 
+
+
 (**
-  A solver Breadth First Search resolution algorithm.
+  A Breadth First Search resolution algorithm.
   If the problem specified by [X] has a solution,
-  [BfsSolver(X).solve ()] returns the shortest sequence
+  [BfsSolver(X).solve ()] returns a shortest sequence
   of actions leading to a goal state.
 
-  Note that this solver is usually much faster
-  than [Solver] on problems where the cost of actions
+  Note that this solver is usually faster
+  than [Solver] and [HSolver] on problems where the cost of actions
   is constant.
 *)
-module BfsSolver : SOLVER = functor (X : UNIT_SPEC) -> struct
-
+module BfsSolver(X : UNIT_SPEC) : sig
+  val solve : unit -> X.action list option
+end = struct
   module Marks = Set.Make(struct
     type t = X.state
     let compare = compare
@@ -189,8 +210,6 @@ module BfsSolver : SOLVER = functor (X : UNIT_SPEC) -> struct
         if X.goal x.state then
           raise (Found (List.rev x.path))
         else if not (marked x.state) then begin
-          let (a, b) : int * int = Obj.magic x.state in
-          Printf.printf "expanding (%d, %d)\n" a b;
           mark x.state;
           expand queue x
         end

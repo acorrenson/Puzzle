@@ -55,3 +55,16 @@ module type SPEC = sig
   (** Cost of an action *)
   val cost : action -> int
 end
+
+(** {!HSPEC} is similar to {!SPEC} but
+    allows to additionally specify a heuristic
+    function.
+    The solver {!Search.HSolver} can take advantage of this
+    heuristic to speed up the search.
+*)
+module type HSPEC = sig
+  include SPEC
+  
+  (** Heuristic function *)
+  val heuristic : state -> int
+end
