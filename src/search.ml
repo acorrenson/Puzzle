@@ -161,6 +161,46 @@ end = struct
   include HSolver(Hspec)
 end
 
+(** Hill climbing solver *)
+module HillClimbing(X : HSPEC) : sig
+  val solve : unit -> X.action list option
+end = struct
+
+  type node = {
+    state : X.state;
+    path  : X.action list;
+  }
+
+  let minh ((_, _, h1) as x1) ((_, _, h2) as x2) =
+    if h1 < h2 then x1 else x2
+
+  let get_best = function
+    | [] -> None
+    | x::xs -> Some (List.fold_left minh x xs)
+
+  let expand { state; path } =
+    let h = X.heuristic state in
+    let nexts =
+      List.filter_map (fun act ->
+        let x = X.apply state act in
+        let hx = X.heuristic x in
+        if hx < h then Some (x, act, hx)
+        else None
+      ) (X.actions state) in
+    Option.map (fun (x, act, _) ->
+      { state = x; path = act::path }
+    ) (get_best nexts)
+
+
+  let solve () =
+    let rec step ({ state; path } as node) =
+      if X.goal state then
+        Some path
+      else
+        Option.bind (expand node) step
+    in
+    step { state = X.init; path = [] }
+end
 
 
 (**
