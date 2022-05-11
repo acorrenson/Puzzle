@@ -74,16 +74,37 @@ type player = P1 | P2
 (** 2-players games *)
 module type GAME2 = sig
   include SPEC
+
+  (** Determine which player is supposed to play
+      in a given state
+  *)
   val which : state -> player
-  val terminal : state -> bool
+  
+  (** Compute the utility of a terminal state.
+      If the given state is not terminal,
+      [utility] is allowed to have any arbitrary
+      behavior. [utility] is never called on
+      non-terminal states.
+  *)
   val utility : state -> player -> int
 end
 
 (** N-players games *)
 module type GAME = sig
   include SPEC
+
+  (** Number of players *)
   val players : int
-  val which : state -> player
-  val terminal : state -> bool
+
+  (** Determine which player is supposed to play
+      in a given state
+  *)
+  val which : state -> int
+
+  (** Compute the utility of a terminal state.
+      The utility is returned as an array
+      where cell [i] is the utility for
+      the [i]-th player.
+  *)
   val utility : state -> int array
 end
