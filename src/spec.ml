@@ -68,3 +68,22 @@ module type HSPEC = sig
   (** Heuristic function *)
   val heuristic : state -> int
 end
+
+type player = P1 | P2
+
+(** 2-players games *)
+module type GAME2 = sig
+  include SPEC
+  val which : state -> player
+  val terminal : state -> bool
+  val utility : state -> player -> int
+end
+
+(** N-players games *)
+module type GAME = sig
+  include SPEC
+  val players : int
+  val which : state -> player
+  val terminal : state -> bool
+  val utility : state -> int array
+end
