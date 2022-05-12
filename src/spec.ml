@@ -74,12 +74,6 @@ type player = P1 | P2
 (** 2-players games *)
 module type GAME2 = sig
   include SPEC
-
-  (** Determine which player is supposed to play
-      in a given state
-  *)
-  val which : state -> player
-  
   (** Compute the utility of a terminal state.
       If the given state is not terminal,
       [utility] is allowed to have any arbitrary
